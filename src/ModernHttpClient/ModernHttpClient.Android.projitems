@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>{5CA5B630-8D9C-48D5-8FC1-96F940E932FB}</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Sikur.Communication</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Utility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProgressStreamContent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CaptiveNetworkException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Android\ConcatenatingStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Android\ImprovedSSLSocketFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Android\NativeCookieHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Android\OkHttpNetworkHandler.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Android\" />
+  </ItemGroup>
+</Project>
