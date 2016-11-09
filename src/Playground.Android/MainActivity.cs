@@ -29,17 +29,21 @@ namespace Playground.Android
 
         void HandleDownloadProgress(long bytes, long totalBytes, long totalBytesExpected)
         {
-            Console.WriteLine("Downloading {0}/{1}", totalBytes, totalBytesExpected);
+			if (totalBytesExpected > 0)
+			{
+				Console.WriteLine("Downloading {0}/{1}", totalBytes, totalBytesExpected);
 
-            RunOnUiThread(() => {
-                progress.Max = 10000;
+				RunOnUiThread(() =>
+				{
+					progress.Max = 10000;
 
-                var progressPercent = (float)totalBytes / (float)totalBytesExpected;
-                var progressOffset = Convert.ToInt32(progressPercent * 10000);
+					var progressPercent = (float)totalBytes / (float)totalBytesExpected;
+					int progressOffset = (int) progressPercent * 10000;
 
-                Console.WriteLine(progressOffset);
-                progress.Progress = progressOffset;
-            });
+					Console.WriteLine(progressOffset);
+					progress.Progress = progressOffset;
+				});
+			}
         }
 
         protected override void OnCreate (Bundle bundle)
@@ -50,16 +54,16 @@ namespace Playground.Android
             SetContentView (Resource.Layout.Main);
 
             //Here we accept any certificate and just print the cert's data.
-            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => {
-                System.Diagnostics.Debug.WriteLine("Callback Server Certificate: " + sslPolicyErrors);
+            //ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => {
+            //    System.Diagnostics.Debug.WriteLine("Callback Server Certificate: " + sslPolicyErrors);
 
-                foreach(var el in chain.ChainElements) {
-                    System.Diagnostics.Debug.WriteLine(el.Certificate.GetCertHashString());
-                    System.Diagnostics.Debug.WriteLine(el.Information);
-                }
+            //    foreach(var el in chain.ChainElements) {
+            //        System.Diagnostics.Debug.WriteLine(el.Certificate.GetCertHashString());
+            //        System.Diagnostics.Debug.WriteLine(el.Information);
+            //    }
 
-                return true;
-            };
+            //    return true;
+            //};
 
             // Get our button from the layout resource,
             // and attach an event to it
@@ -79,7 +83,9 @@ namespace Playground.Android
             };
 
             button.Click += async (o, e) => {
-                var handler = new NativeMessageHandler();
+                var handler = new NativeMessageHandler(false, false, true);
+				//handler.AllowUntrustedCertificates = true;
+
                 var client = new HttpClient(handler);
 
                 currentToken = new CancellationTokenSource();
@@ -91,11 +97,11 @@ namespace Playground.Android
 
                 st.Start();
                 try {
-                    //var url = "https://tv.eurosport.com";
-                    //var url = "https://github.com/downloads/nadlabak/android/cm-9.1.0a-umts_sholes.zip";
-                    var url = "https://github.com/paulcbetts/ModernHttpClient/releases/download/0.9.0/ModernHttpClient-0.9.zip";
-
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+					var url = "https://www.lojascolombo.com.br/"; 
+					//var url = "https://github.com/downloads/nadlabak/android/cm-9.1.0a-umts_sholes.zip";
+					//var url = "https://github.com/paulcbetts/ModernHttpClient/releases/download/0.9.0/ModernHttpClient-0.9.zip";
+				
+					var request = new HttpRequestMessage(HttpMethod.Get, url);
                     handler.RegisterForProgress(request, HandleDownloadProgress);
 
                     resp = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, currentToken.Token);

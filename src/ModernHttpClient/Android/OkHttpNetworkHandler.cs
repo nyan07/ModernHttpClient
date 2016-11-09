@@ -17,7 +17,7 @@ namespace ModernHttpClient
 {
 	public class NativeMessageHandler : HttpClientHandler
     {
-        readonly OkHttpClient client = new OkHttpClient();
+		OkHttpClient client;
         readonly CacheControl noCacheCacheControl = default(CacheControl);
         readonly bool throwOnCaptiveNetwork;
 
@@ -29,33 +29,59 @@ namespace ModernHttpClient
             };
 
         private bool customSSLVerification = false;
-        private bool allowUntrustedCertificates = false;          public bool AllowUntrustedCertificates
+        private bool allowUntrustedCertificates;          public bool AllowUntrustedCertificates
         {
             get 
             {
                 return allowUntrustedCertificates;
             }             set
-            {                 allowUntrustedCertificates = value;                  if (allowUntrustedCertificates)                 {                     client.SetHostnameVerifier(null);
-                    client.SetSslSocketFactory(null);
+            {                 allowUntrustedCertificates = value;
+				this.client = value ? GetUnsafeOkHttpClient() : GetSafeOkHttpClient();
+            }         }
 
-                    ServicePointManager.ServerCertificateValidationCallback = delegate
-                    {
-                        return true;
-                    };                 }                 else                 {
-                    if (customSSLVerification) client.SetHostnameVerifier(new HostnameVerifier());
-                    client.SetSslSocketFactory(new ImprovedSSLSocketFactory());
-                }             }         }
+		private OkHttpClient GetSafeOkHttpClient()
+		{
+			OkHttpClient okHttpClient = new OkHttpClient();
+
+			if (customSSLVerification) 
+			{
+				okHttpClient.SetHostnameVerifier(new HostnameVerifier());
+			}
+
+			okHttpClient.SetSslSocketFactory(new ImprovedSSLSocketFactory());
+
+			return okHttpClient;
+		}
+
+		private OkHttpClient GetUnsafeOkHttpClient()	
+		{
+			ITrustManager[] trustAllCerts = new ITrustManager[] { new X509TrustManager() };
+			SSLContext sslContext = SSLContext.GetInstance("SSL");
+			sslContext.Init(null, trustAllCerts, null);
+			SSLSocketFactory sslSocketFactory = sslContext.SocketFactory;
+		    OkHttpClient okHttpClient = new OkHttpClient();
+			okHttpClient.SetSslSocketFactory(sslSocketFactory);
+			okHttpClient.SetHostnameVerifier(new UnsafeHostnameVerifier());
+
+			return okHttpClient;
+		}
 
         public bool DisableCaching { get; set; }
 
-        public NativeMessageHandler() : this(false, false) {}
+        public NativeMessageHandler() : this(false, false, false) {}
 
-        public NativeMessageHandler(bool throwOnCaptiveNetwork, bool customSSLVerification, NativeCookieHandler cookieHandler = null)
+		public NativeMessageHandler(bool throwOnCaptiveNetwork, bool customSSLVerification, 
+		                            NativeCookieHandler cookieHandler = null) 
+			: this(throwOnCaptiveNetwork,  customSSLVerification, false, cookieHandler)
+		{}
+
+		public NativeMessageHandler(bool throwOnCaptiveNetwork, bool customSSLVerification, 
+		                            bool allowUntrustedCertificate, NativeCookieHandler cookieHandler = null)
         {
             this.throwOnCaptiveNetwork = throwOnCaptiveNetwork;
             this.customSSLVerification = customSSLVerification;
 
-            AllowUntrustedCertificates = false;
+            AllowUntrustedCertificates = allowUntrustedCertificate;
             noCacheCacheControl = (new CacheControl.Builder()).NoCache().Build();
         }
 
@@ -223,6 +249,30 @@ namespace ModernHttpClient
         }
     }
 
+	class X509TrustManager : Java.Lang.Object, IX509TrustManager
+	{
+		public void CheckClientTrusted(Java.Security.Cert.X509Certificate[] chain, string authType)
+		{
+		}
+
+		public void CheckServerTrusted(Java.Security.Cert.X509Certificate[] chain, string authType)
+		{
+		}
+
+		public Java.Security.Cert.X509Certificate[] GetAcceptedIssuers()
+		{
+			return new Java.Security.Cert.X509Certificate[] { };
+		}
+	}
+
+	class UnsafeHostnameVerifier : Java.Lang.Object, IHostnameVerifier
+	{
+		public bool Verify(string hostname, ISSLSession session)
+		{
+			return true;
+		}
+	}
+
     class HostnameVerifier : Java.Lang.Object, IHostnameVerifier
     {
         static readonly Regex cnRegex = new Regex(@"CN\s*=\s*([^,]*)", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.Singleline);
@@ -241,6 +291,8 @@ namespace ModernHttpClient
         /// <param name="session"></param>
         static bool verifyServerCertificate(string hostname, ISSLSession session)
         {
+			return true;
+
             var defaultVerifier = HttpsURLConnection.DefaultHostnameVerifier;
 
             if (ServicePointManager.ServerCertificateValidationCallback == null) return defaultVerifier.Verify(hostname, session);
