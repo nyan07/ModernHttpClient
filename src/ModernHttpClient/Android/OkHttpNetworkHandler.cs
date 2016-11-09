@@ -28,6 +28,24 @@ namespace ModernHttpClient
                 {"User-Agent", " "}
             };
 
+        private bool customSSLVerification = false;
+        private bool allowUntrustedCertificates = false;          public bool AllowUntrustedCertificates
+        {
+            get 
+            {
+                return allowUntrustedCertificates;
+            }             set
+            {                 allowUntrustedCertificates = value;                  if (allowUntrustedCertificates)                 {                     client.SetHostnameVerifier(null);
+                    client.SetSslSocketFactory(null);
+
+                    ServicePointManager.ServerCertificateValidationCallback = delegate
+                    {
+                        return true;
+                    };                 }                 else                 {
+                    if (customSSLVerification) client.SetHostnameVerifier(new HostnameVerifier());
+                    client.SetSslSocketFactory(new ImprovedSSLSocketFactory());
+                }             }         }
+
         public bool DisableCaching { get; set; }
 
         public NativeMessageHandler() : this(false, false) {}
@@ -35,12 +53,10 @@ namespace ModernHttpClient
         public NativeMessageHandler(bool throwOnCaptiveNetwork, bool customSSLVerification, NativeCookieHandler cookieHandler = null)
         {
             this.throwOnCaptiveNetwork = throwOnCaptiveNetwork;
+            this.customSSLVerification = customSSLVerification;
 
-            if (customSSLVerification) client.SetHostnameVerifier(new HostnameVerifier());
+            AllowUntrustedCertificates = false;
             noCacheCacheControl = (new CacheControl.Builder()).NoCache().Build();
-
-			// validating client ciphers
-			client.SetSslSocketFactory(new ImprovedSSLSocketFactory());
         }
 
         public void RegisterForProgress(HttpRequestMessage request, ProgressDelegate callback)
