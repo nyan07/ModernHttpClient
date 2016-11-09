@@ -63,6 +63,7 @@
     <Reference Include="Square.OkHttp">
       <HintPath>..\..\packages\Square.OkHttp.2.7.5.0\lib\MonoAndroid\Square.OkHttp.dll</HintPath>
     </Reference>
+    <Compile Include="Android\ImprovedSSLSocketFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Android\Properties\" />
